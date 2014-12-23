@@ -24,8 +24,6 @@ class Sane
     get_devices.map { |device| Device.new(device) }
   end
 
-  private
-
   def not_initialized?
     version.nil?
   end
