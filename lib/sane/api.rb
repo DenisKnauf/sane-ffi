@@ -11,6 +11,7 @@ class Sane
     enum :unit, [:none, 0, :pixel, :bit, :mm, :dpi, :percent, :microsecond]
     enum :action, [:get_value, 0, :set_value, :set_auto]
     enum :frame, [:gray, :rgb, :red, :green, :blue]
+    ConstraintType = enum :none, 0, :range, :word_list, :string_list
 
     class Device < FFI::Struct
       layout :name, :string, :vendor, :string, :model, :string, :type, :string
@@ -26,12 +27,58 @@ class Sane
     end
 
     class OptionDescriptor < FFI::Struct
-      class ConstraintType < FFI::Union
-        layout :string_list, :pointer, :word_list, :pointer, :range, :pointer
-      end
-      layout :name, :string, :title, :string, :desc, :string, :type, :value_type, :unit, :unit, :size, :int, :cap, :int, :constraint_type, ConstraintType
+      class Range < Struct.new(:min, :max, :quant)
+        include Comparable
+        include Enumerable
+        def <=> x
+          (min..max) <=> x
+        end
 
-      def to_hash;
+        def include? x
+          (min..max).include?( x) and 0 == (x-min) % quant
+        end
+
+        def === x
+          x.kind_of?( Numeric) and include?( x)
+        end
+
+        def each
+          min.step( max, [1,quant].max)
+        end
+      end
+
+      layout :name, :string,
+        :title, :string,
+        :desc, :string,
+        :type, :value_type,
+        :unit, :unit,
+        :size, :int,
+        :cap, :int,
+        :constraint_type, ConstraintType,
+        :constraint, :pointer
+
+      alias method_missing []
+
+      def constraint
+        c = self[:constraint]
+        case self[:constraint_type]
+        when 0, :none then nil
+        when 1, :range
+          Range.new *c.read_array_of_int( 3)
+        when 2, :word_list
+          c[FFI::Type::INT.size].read_array_of_int c.read_int
+        when 3, :string_list
+          i, r, p = 0, [], nil
+          while 0 < (p = c[i].read_pointer).address
+            STDERR.puts p.inspect
+            r << p.read_string_to_null
+            i += FFI::Type::POINTER.size
+          end
+          r
+        end
+      end
+
+      def to_hash
         {
           :name => self[:name],
           :title => self[:title],
@@ -39,7 +86,8 @@ class Sane
           :type => self[:type],
           :unit => self[:unit],
           :size => self[:size],
-          :cap => self[:cap]
+          :cap => self[:cap],
+          :constraint => constraint
         }
       end
     end

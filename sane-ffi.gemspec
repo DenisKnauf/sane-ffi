@@ -3,11 +3,11 @@ $:.push File.expand_path("../lib", __FILE__)
 require "sane/version"
 
 Gem::Specification.new do |s|
-  s.name        = "sane-ffi"
+  s.name        = "sane-ffi-denkn"
   s.version     = Sane::VERSION
   s.platform    = Gem::Platform::RUBY
-  s.authors     = ["Jakub Kuźma"]
-  s.email       = ["qoobaa@gmail.com"]
+  s.authors     = ["Jakub Kuźma & Denis Knauf"]
+  s.email       = ["qoobaa@gmail.com", %Q[de#{?n}]+'is'+?@+"d#{'en'}k"+?n+?.+%q[at]]
   s.homepage    = ""
   s.summary     = %q{SANE bindings}
   s.description = %q{Scanner Access now Easier}
